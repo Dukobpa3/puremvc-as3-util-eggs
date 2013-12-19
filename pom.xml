@@ -3,41 +3,25 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.playtika.puremvc</groupId>
-	<artifactId>puremvc-core</artifactId>
-	<name>puremvc-core</name>
+	<artifactId>puremvc-as3-util-eggs</artifactId>
+	<name>puremvc-as3-util-eggs</name>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>swc</packaging>
 
 	<parent>
-		<groupId>gd.eggs.as3</groupId>
-		<artifactId>base</artifactId>
+		<groupId>com.playtika.puremvc</groupId>
+		<artifactId>puremvc-core</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 
-	<repositories>
-		<repository>
-			<id>github.repo.release</id>
-			<name>Internal Repository</name>
-			<url>https://github.com/eggs-gd/eggs-mvn-artifactory/raw/master/mvn-repo/release</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>github.repo.snapshot</id>
-			<name>Internal Repository</name>
-			<url>https://github.com/eggs-gd/eggs-mvn-artifactory/raw/master/mvn-repo/snapshot</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
+	<dependencies>
+		<dependency>
+			<groupId>com.playtika.puremvc</groupId>
+			<artifactId>puremvc-as3-multicore-framework</artifactId>
+			<version>1.0.5</version>
+			<type>swc</type>
+			<scope>external</scope>
+		</dependency>
+	</dependencies>
 
 </project>
