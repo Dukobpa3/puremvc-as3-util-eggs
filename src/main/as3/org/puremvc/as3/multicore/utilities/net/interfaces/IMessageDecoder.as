@@ -1,18 +1,17 @@
-﻿package org.puremvc.as3.multicore.utilities.net.decoder
+﻿package org.puremvc.as3.multicore.utilities.net.interfaces
 {
 	import flash.events.IEventDispatcher;
 
-
-	/**
-	 * ...
-	 * @author Dukobpa3
-	 */
 	[Event(name="invalid data type", type="flash.events.DataEvent")]
 	[Event(name="invalid package size", type="flash.events.DataEvent")]
 	[Event(name="receiving header", type="flash.events.DataEvent")]
 	[Event(name="in progress", type="flash.events.DataEvent")]
 	[Event(name="done", type="flash.events.DataEvent")]
 
+	/**
+	 * ...
+	 * @author Dukobpa3
+	 */
 	public interface IMessageDecoder extends IEventDispatcher
 	{
 		//=====================================================================

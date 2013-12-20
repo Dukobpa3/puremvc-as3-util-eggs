@@ -2,13 +2,11 @@ package org.puremvc.as3.multicore.utilities.net
 {
 	import org.puremvc.as3.multicore.interfaces.IProxy;
 	import org.puremvc.as3.multicore.patterns.proxy.Proxy;
-	import org.puremvc.as3.multicore.utilities.net.connect.ConnectionEvent;
-	import org.puremvc.as3.multicore.utilities.net.connect.IServerConnect;
-	import org.puremvc.as3.multicore.utilities.net.connect.ServerConnectConfig;
-	import org.puremvc.as3.multicore.utilities.net.connect.SocketConnect;
-	import org.puremvc.as3.multicore.utilities.net.decoder.DecoderEvent;
-	import org.puremvc.as3.multicore.utilities.net.decoder.IMessageDecoder;
-	import org.puremvc.as3.multicore.utilities.net.decoder.ParseStatus;
+	import org.puremvc.as3.multicore.utilities.net.connectors.ConnectorsFactory;
+	import org.puremvc.as3.multicore.utilities.net.events.ConnectorEvent;
+	import org.puremvc.as3.multicore.utilities.net.interfaces.IServerConnect;
+	import org.puremvc.as3.multicore.utilities.net.events.DecoderEvent;
+	import org.puremvc.as3.multicore.utilities.net.interfaces.IMessageDecoder;
 
 
 	public class ServerProxy extends Proxy implements IProxy
@@ -27,22 +25,20 @@ package org.puremvc.as3.multicore.utilities.net
 
 		public static const SERVER_LOG:String = "serverLog";
 
-		private static const CONNECTIONS_MAP:Object = {
-			"socket":SocketConnect
-		}
-
 		//=====================================================================
 		//		PARAMETERS
 		//=====================================================================
-		/** Соб�?твенно коннектор
-		 * TODO: перепилить под не�?колько коннекторов, ща�? похуй, рботаем тока �? �?окетом */
+
+		/**
+		 * Собственно коннектор
+		 */
 		private var _connection:IServerConnect;
 
 		/**
-		 * 1. При отправке пакует нечто адекватное в неведомую �?ерверную хуйню(ByteArray, String),
-		 * 2. При получении ра�?паковывает неведомую �?ерверную хуйню в нечто адекватное
-		 * контроллер не знает ни первый ни второй формат,
-		 * Коннектор �?оответ�?твенно тоже
+		 * 1. При отправке пакует нечто адекватное в неведомую серверную хуйню(ByteArray, String),
+		 * 2. При получении распаковывает неведомую серверную хуйню в нечто адекватное
+		 * прокси не знает ни первый ни второй формат,
+		 * Коннектор соответственно тоже
 		 */
 		private var _decoder:IMessageDecoder;
 
@@ -56,34 +52,27 @@ package org.puremvc.as3.multicore.utilities.net
 			_decoder = decoder;
 		}
 
-		override public function onRegister():void
-		{
-			_decoder.addEventListener(ParseStatus.INVALID_DATA_TYPE, onDecoderError);
-			_decoder.addEventListener(ParseStatus.INVALID_PACKAGE_SIZE, onDecoderError);
-			_decoder.addEventListener(ParseStatus.RECEIVING_HEADER, onDecoderProgress);
-			_decoder.addEventListener(ParseStatus.IN_PROGRESS, onDecoderProgress);
-			_decoder.addEventListener(ParseStatus.DONE, onDecoderData);
-		}
+		override public function onRegister():void { }
 
 		override public function onRemove():void
 		{
 			_connection.close();
 			_connection = null;
 
-			_decoder.addEventListener(ParseStatus.INVALID_DATA_TYPE, onDecoderError);
-			_decoder.addEventListener(ParseStatus.INVALID_PACKAGE_SIZE, onDecoderError);
-			_decoder.addEventListener(ParseStatus.RECEIVING_HEADER, onDecoderProgress);
-			_decoder.addEventListener(ParseStatus.IN_PROGRESS, onDecoderProgress);
-			_decoder.addEventListener(ParseStatus.DONE, onDecoderData);
+			_decoder.addEventListener(DecoderEvent.INVALID_DATA_TYPE, onDecoderError);
+			_decoder.addEventListener(DecoderEvent.INVALID_PACKAGE_SIZE, onDecoderError);
+			_decoder.addEventListener(DecoderEvent.RECEIVING_HEADER, onDecoderProgress);
+			_decoder.addEventListener(DecoderEvent.IN_PROGRESS, onDecoderProgress);
+			_decoder.addEventListener(DecoderEvent.DONE, onDecoderData);
 
-			_connection.addEventListener(ConnectionEvent.CONNECT_ATTEMPT, onConnectAttempt);
-			_connection.addEventListener(ConnectionEvent.CONNECT_ERROR, onConnectError);
-			_connection.addEventListener(ConnectionEvent.CONNECTED, onConnected);
-			_connection.addEventListener(ConnectionEvent.SEND_DATA, onSendData);
-			_connection.addEventListener(ConnectionEvent.RECEIVE_DATA, onReceiveData);
-			_connection.addEventListener(ConnectionEvent.CLOSE, onClose);
+			_connection.addEventListener(ConnectorEvent.CONNECT_ATTEMPT, onConnectAttempt);
+			_connection.addEventListener(ConnectorEvent.CONNECT_ERROR, onConnectError);
+			_connection.addEventListener(ConnectorEvent.CONNECTED, onConnected);
+			_connection.addEventListener(ConnectorEvent.SEND_DATA, onSendData);
+			_connection.addEventListener(ConnectorEvent.RECEIVE_DATA, onReceiveData);
+			_connection.addEventListener(ConnectorEvent.CLOSE, onClose);
 
-			_connection.addEventListener(ConnectionEvent.LOG, onLog);
+			_connection.addEventListener(ConnectorEvent.LOG, onLog);
 		}
 
 		/**
@@ -99,26 +88,26 @@ package org.puremvc.as3.multicore.utilities.net
 		//	CONNECT
 		//-----------------------------
 		/**
-		 * Инициализируем подключение, подпи�?ываем�?�? на �?обыти�? подключени�?
+		 * Инициализируем подключение, подписываемся на события подключения
 		 */
 		public function connect(connectConfig:ServerConnectConfig):void
 		{
-			_connection = new (CONNECTIONS_MAP[connectConfig.type] as Class)();
+			_connection = ConnectorsFactory.getConnector(connectConfig.type);
 
-			_decoder.addEventListener(ParseStatus.INVALID_DATA_TYPE, onDecoderError);
-			_decoder.addEventListener(ParseStatus.INVALID_PACKAGE_SIZE, onDecoderError);
-			_decoder.addEventListener(ParseStatus.RECEIVING_HEADER, onDecoderProgress);
-			_decoder.addEventListener(ParseStatus.IN_PROGRESS, onDecoderProgress);
-			_decoder.addEventListener(ParseStatus.DONE, onDecoderData);
+			_decoder.addEventListener(DecoderEvent.INVALID_DATA_TYPE, onDecoderError);
+			_decoder.addEventListener(DecoderEvent.INVALID_PACKAGE_SIZE, onDecoderError);
+			_decoder.addEventListener(DecoderEvent.RECEIVING_HEADER, onDecoderProgress);
+			_decoder.addEventListener(DecoderEvent.IN_PROGRESS, onDecoderProgress);
+			_decoder.addEventListener(DecoderEvent.DONE, onDecoderData);
 
-			_connection.addEventListener(ConnectionEvent.CONNECT_ATTEMPT, onConnectAttempt);
-			_connection.addEventListener(ConnectionEvent.CONNECT_ERROR, onConnectError);
-			_connection.addEventListener(ConnectionEvent.CONNECTED, onConnected);
-			_connection.addEventListener(ConnectionEvent.SEND_DATA, onSendData);
-			_connection.addEventListener(ConnectionEvent.RECEIVE_DATA, onReceiveData);
-			_connection.addEventListener(ConnectionEvent.CLOSE, onClose);
+			_connection.addEventListener(ConnectorEvent.CONNECT_ATTEMPT, onConnectAttempt);
+			_connection.addEventListener(ConnectorEvent.CONNECT_ERROR, onConnectError);
+			_connection.addEventListener(ConnectorEvent.CONNECTED, onConnected);
+			_connection.addEventListener(ConnectorEvent.SEND_DATA, onSendData);
+			_connection.addEventListener(ConnectorEvent.RECEIVE_DATA, onReceiveData);
+			_connection.addEventListener(ConnectorEvent.CLOSE, onClose);
 
-			_connection.addEventListener(ConnectionEvent.LOG, onLog);
+			_connection.addEventListener(ConnectorEvent.LOG, onLog);
 
 			_connection.init(connectConfig);
 		}
@@ -130,56 +119,51 @@ package org.puremvc.as3.multicore.utilities.net
 		//=====================================================================
 		//		HANDLERS
 		//=====================================================================
-		private function onConnectAttempt(event:ConnectionEvent):void
+		//-----------------------------
+		//  Connector
+		//-----------------------------
+		private function onConnectAttempt(event:ConnectorEvent):void
 		{
 			sendNotification(SERVER_LOG, event.toString());
 		}
 
-		private function onConnectError(event:ConnectionEvent):void
+		private function onConnectError(event:ConnectorEvent):void
 		{
 			sendNotification(SERVER_ERROR, event);
 		}
 
-		private function onConnected(event:ConnectionEvent):void
+		private function onConnected(event:ConnectorEvent):void
 		{
 			sendNotification(SERVER_LOG, event.toString());
 			sendNotification(SERVER_CONNECTED);
 		}
 
-		private function onSendData(event:ConnectionEvent):void
+		private function onSendData(event:ConnectorEvent):void
 		{
 			sendNotification(SERVER_LOG, event.toString());
 		}
 
-		/**
-		 * Обработка получени�? данных �? �?ервера.
-		 * получем �?обытие. Внутри него е�?ть полученные данные.
-		 * далее �?мотрим е�?ть ли ошибки. е�?ли е�?ть, то обрабатываем и ретурн.
-		 * е�?ли нету ошибок �?мотрим команду. �?екоторые команды требуют отправки дополнительных нотификаций.
-		 * �?о нотификации �?разу не отправл�?ем а добавл�?ем в ма�?�?ив.
-		 * �?екоторые команды требуют уникального пар�?инга. В таком �?лучаем �?тавим ключ needUpdate = false, чтобы �?тандартный пар�?ер не запу�?кал�?�?
-		 * Далее пар�?им �?тандартным пар�?ером.
-		 * Потом когда ра�?пар�?или полученные данные - отправл�?ем нотификации из �?пи�?ка.
-		 * @param    e
-		 */
-		private function onReceiveData(event:ConnectionEvent):void
+		private function onReceiveData(event:ConnectorEvent):void
 		{
 			sendNotification(SERVER_LOG, event.toString());
 
 			if (_decoder) _decoder.parse(event.data);
 		}
 
-		private function onClose(event:ConnectionEvent):void
+		private function onClose(event:ConnectorEvent):void
 		{
 			sendNotification(SERVER_LOG, event.toString());
 			sendNotification(SERVER_DISCONNECTED);
 		}
 
-		private function onLog(event:ConnectionEvent):void
+		private function onLog(event:ConnectorEvent):void
 		{
 			sendNotification(SERVER_LOG, event.toString());
 		}
 
+		//-----------------------------
+		//  Decoder
+		//-----------------------------
 		private function onDecoderError(event:DecoderEvent):void
 		{
 			sendNotification(SERVER_LOG, event.toString());

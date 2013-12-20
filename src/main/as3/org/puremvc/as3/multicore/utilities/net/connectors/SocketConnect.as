@@ -1,4 +1,4 @@
-﻿package org.puremvc.as3.multicore.utilities.net.connect
+﻿package org.puremvc.as3.multicore.utilities.net.connectors
 {
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -12,15 +12,12 @@
 	import flash.utils.Endian;
 	import flash.utils.Timer;
 
+	import org.puremvc.as3.multicore.utilities.net.ServerConnectConfig;
 
-	[Event(name="connected", type="org.puremvc.as3.multicore.utilities.net.connect.ConnectionEvent")]
-	[Event(name="closeConnection", type="org.puremvc.as3.multicore.utilities.net.connect.ConnectionEvent")]
-	[Event(name="connectAttempt", type="org.puremvc.as3.multicore.utilities.net.connect.ConnectionEvent")]
-	[Event(name="sendData", type="org.puremvc.as3.multicore.utilities.net.connect.ConnectionEvent")]
-	[Event(name="receiveData", type="org.puremvc.as3.multicore.utilities.net.connect.ConnectionEvent")]
-	[Event(name="connectError", type="org.puremvc.as3.multicore.utilities.net.connect.ConnectionEvent")]
+	import org.puremvc.as3.multicore.utilities.net.events.ConnectorEvent;
 
-	[Event(name="log", type="flash.events.DataEvent")]
+	import org.puremvc.as3.multicore.utilities.net.interfaces.IServerConnect;
+
 
 	/**
 	 * ...
@@ -28,8 +25,6 @@
 	 */
 	public class SocketConnect extends EventDispatcher implements IServerConnect
 	{
-		public static const LOG:String = "log";
-
 		private var _socket:Socket;
 
 		/** текущий коннект */
@@ -37,9 +32,6 @@
 
 		/** данные готовые для использовани�? */
 		private var _data:Object;
-
-		/** Таймер попыток соединения */
-		private var _attemptsTimeout:Timer;
 
 		/** Еще один таймер */
 		private var _connectTimeout:Timer;
@@ -81,7 +73,6 @@
 
 			_socket = null;
 
-			_attemptsTimeout.removeEventListener(TimerEvent.TIMER_COMPLETE, onSocketConnectTimeout);
 			_connectTimeout.stop();
 			_connectTimeout = null;
 		}
@@ -100,14 +91,14 @@
 				{
 					_socket.writeUTFBytes(data as String);
 					_socket.flush();
-					dispatchEvent(new ConnectionEvent(ConnectionEvent.SEND_DATA, data));
+					dispatchEvent(new ConnectorEvent(ConnectorEvent.SEND_DATA, data));
 				}
 				if (data is ByteArray)
 				{
 					(data as ByteArray).position = 0;
 					_socket.writeBytes(data as ByteArray);
 					_socket.flush();
-					dispatchEvent(new ConnectionEvent(ConnectionEvent.SEND_DATA, data));
+					dispatchEvent(new ConnectorEvent(ConnectorEvent.SEND_DATA, data));
 				}
 			}
 			catch (e:Error)
@@ -115,7 +106,6 @@
 				addLog("socket.write Error: ", e.message);
 			}
 
-			resetConnectionTimer();
 		}
 
 		//=====================================================================
@@ -138,29 +128,14 @@
 
 			_socket.connect(_config.host, _config.port);
 
-			_attemptsTimeout = new Timer(_config.timeout * 1000, 1);
-			_attemptsTimeout.addEventListener(TimerEvent.TIMER_COMPLETE, onSocketConnectTimeout);
-			_attemptsTimeout.start();
-		}
-
-		/**
-		 * Перезапуск таймера подключения
-		 */
-		private function resetConnectionTimer():void
-		{
-			addLog("resetConnectionTimer, delay:", (_config.connectTime * 1000));
-
-			_connectTimeout.reset();
-			_connectTimeout.delay = _config.connectTime * 1000;
-			_connectTimeout.repeatCount = 1;
+			_connectTimeout = new Timer(_config.timeout * 1000, 1);
+			_connectTimeout.addEventListener(TimerEvent.TIMER_COMPLETE, onSocketConnectTimeout);
 			_connectTimeout.start();
 		}
 
 		private function addLog(...rest):void
 		{
-			//string = "-- " + string;
-			//rest.unshift(this);
-			dispatchEvent(new ConnectionEvent(SocketConnect.LOG, rest, true, false));
+			dispatchEvent(new ConnectorEvent(ConnectorEvent.LOG, rest, true, false));
 		}
 
 		//=====================================================================
@@ -174,7 +149,7 @@
 			bytes.endian = Endian.LITTLE_ENDIAN;
 			_socket.readBytes(bytes);
 
-			dispatchEvent(new ConnectionEvent(ConnectionEvent.RECEIVE_DATA, bytes));
+			dispatchEvent(new ConnectorEvent(ConnectorEvent.RECEIVE_DATA, bytes));
 
 		}
 
@@ -186,16 +161,16 @@
 		private function onSocketClose(e:Event):void
 		{
 			addLog("onSocketClose: ", e);
-			dispatchEvent(new ConnectionEvent(ConnectionEvent.CLOSE));
+			dispatchEvent(new ConnectorEvent(ConnectorEvent.CLOSE));
 		}
 
 		private function onSocketConnect(e:Event):void
 		{
 			addLog("onSocketConnect: ", e);
 			_connected = true;
-			dispatchEvent(new ConnectionEvent(ConnectionEvent.CONNECTED));
+			dispatchEvent(new ConnectorEvent(ConnectorEvent.CONNECTED));
 
-			_attemptsTimeout.stop();
+			_connectTimeout.stop();
 		}
 
 		private function onSocketIOError(e:IOErrorEvent):void

@@ -1,4 +1,4 @@
-﻿package org.puremvc.as3.multicore.utilities.net.connect
+﻿package org.puremvc.as3.multicore.utilities.net.events
 {
 	import flash.events.Event;
 
@@ -7,7 +7,7 @@
 	 * ...
 	 * @author Dukobpa3
 	 */
-	public class ConnectionEvent extends Event
+	public class ConnectorEvent extends Event
 	{
 
 		/**
@@ -50,7 +50,7 @@
 		/**
 		 * @inheritDoc
 		 */
-		public function ConnectionEvent(type:String, data:Object = null, bubbles:Boolean = false, cancelable:Boolean = false)
+		public function ConnectorEvent(type:String, data:Object = null, bubbles:Boolean = false, cancelable:Boolean = false)
 		{
 			_data = data;
 			super(type, bubbles, cancelable);
@@ -59,8 +59,7 @@
 		/**
 		 * Полученные данные от сервера
 		 */
-		public function get data():Object
-		{ return _data; }
+		public function get data():Object { return _data; }
 
 	}
 
